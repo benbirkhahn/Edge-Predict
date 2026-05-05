@@ -1,0 +1,47 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-bento-bg: #050505;
+  --color-bento-card: rgba(20, 20, 22, 0.8);
+  --color-bento-border: #222;
+  --color-edge-green: #00FF66;
+  --color-alert-red: #FF3B30;
+  --color-bento-text: #E0E0E0;
+}
+
+@layer base {
+  body {
+    @apply bg-bento-bg text-bento-text font-sans selection:bg-edge-green selection:text-black;
+  }
+}
+
+@layer components {
+  .bento-card {
+    @apply bg-bento-card border border-bento-border rounded-xl overflow-hidden backdrop-blur-sm transition-all duration-300;
+  }
+
+  .mono {
+    @apply font-mono;
+  }
+
+  .edge-glow {
+    box-shadow: 0 0 15px rgba(0, 255, 102, 0.1);
+  }
+
+  .col-header {
+    @apply text-[10px] uppercase font-semibold text-white/40 tracking-[0.2em] mb-2;
+  }
+}
+
+/* Custom Table Styles */
+.bento-table-row {
+  @apply border-b border-white/5 hover:bg-white/5 transition-colors cursor-default;
+}
+
+.bento-button-primary {
+  @apply bg-edge-green text-black font-bold uppercase text-[10px] tracking-widest py-2 px-4 rounded hover:opacity-90 transition-all;
+}
