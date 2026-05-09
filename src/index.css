@@ -1,19 +1,28 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
   
-  --color-bento-bg: #050505;
-  --color-bento-card: rgba(20, 20, 22, 0.8);
-  --color-bento-border: #222;
-  --color-edge-green: #00FF66;
+  --color-bento-bg: #0b0d10;
+  --color-bento-card: rgba(18, 22, 27, 0.84);
+  --color-bento-border: rgba(255, 255, 255, 0.08);
+  --color-edge-green: #88ff7a;
   --color-alert-red: #FF3B30;
-  --color-bento-text: #E0E0E0;
+  --color-bento-text: #edf2f7;
+  --color-edge-gold: #f7d774;
+  --color-edge-blue: #8dc8ff;
 }
 
 @layer base {
+  html {
+    background:
+      radial-gradient(circle at top left, rgba(247, 215, 116, 0.08), transparent 24%),
+      radial-gradient(circle at top right, rgba(136, 255, 122, 0.08), transparent 26%),
+      linear-gradient(180deg, #0b0d10 0%, #10141a 100%);
+  }
+
   body {
     @apply bg-bento-bg text-bento-text font-sans selection:bg-edge-green selection:text-black;
   }
@@ -21,23 +30,28 @@
 
 @layer components {
   .bento-card {
-    @apply bg-bento-card border border-bento-border rounded-xl overflow-hidden backdrop-blur-sm transition-all duration-300;
+    @apply bg-bento-card border border-bento-border rounded-[1.35rem] overflow-hidden backdrop-blur-sm transition-all duration-300;
   }
 
   .mono {
     @apply font-mono;
   }
 
-  .edge-glow {
-    box-shadow: 0 0 15px rgba(0, 255, 102, 0.1);
+  .editorial-frame {
+    background:
+      linear-gradient(135deg, rgba(247, 215, 116, 0.1), transparent 28%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0));
   }
 
-  .col-header {
-    @apply text-[10px] uppercase font-semibold text-white/40 tracking-[0.2em] mb-2;
+  .section-kicker {
+    @apply font-mono text-[10px] uppercase tracking-[0.24em] text-white/38;
+  }
+
+  .stat-block {
+    @apply rounded-[1.15rem] border border-white/8 bg-black/20 p-4;
   }
 }
 
-/* Custom Table Styles */
 .bento-table-row {
   @apply border-b border-white/5 hover:bg-white/5 transition-colors cursor-default;
 }

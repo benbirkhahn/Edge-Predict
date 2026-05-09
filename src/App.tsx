@@ -178,42 +178,71 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-bento-bg text-bento-text">
-      <div className="mx-auto flex max-w-[1400px] flex-col gap-6 p-4 md:p-6">
-        <header className="overflow-hidden rounded-3xl border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(0,255,102,0.16),transparent_28%),radial-gradient(circle_at_top_right,rgba(86,204,242,0.14),transparent_24%),linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0))] p-6 md:p-8">
-          <div className="mb-6 flex flex-wrap items-center gap-3 mono text-[10px] uppercase tracking-[0.24em] text-white/45">
-            <span className="rounded-full border border-edge-green/30 px-3 py-1 text-edge-green">GitHub Pages Mock Walkthrough</span>
-            <span>Read-only portfolio demo</span>
+      <div className="mx-auto flex max-w-[1420px] flex-col gap-6 p-4 md:p-6">
+        <header className="editorial-frame overflow-hidden rounded-[2rem] border border-white/10 p-6 md:p-8">
+          <div className="mb-8 flex flex-wrap items-center gap-3">
+            <span className="rounded-full border border-edge-gold/30 px-3 py-1 mono text-[10px] uppercase tracking-[0.2em] text-edge-gold">EdgePredict Walkthrough</span>
+            <span className="section-kicker">Read-only GitHub Pages demo</span>
           </div>
-          <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-end">
-            <div className="space-y-4">
-              <h1 className="max-w-3xl text-4xl font-semibold tracking-tight text-white md:text-6xl">
-                EdgePredict turns noisy sports markets into disciplined, explainable decisions.
+          <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
+            <div className="space-y-5">
+              <p className="section-kicker">Sports market intelligence / execution controls / positive EV workflow</p>
+              <h1 className="max-w-4xl text-4xl font-semibold leading-[0.95] tracking-[-0.04em] text-white md:text-7xl">
+                A market intelligence engine that shows its work before it risks capital.
               </h1>
-              <p className="max-w-2xl text-base leading-7 text-white/70 md:text-lg">
-                This mock walkthrough shows how the product ingests market data, estimates fair probability from sportsbook consensus,
-                scores positive expected value, and blocks unsafe execution with hard server-side risk controls.
+              <p className="max-w-2xl text-base leading-7 text-white/68 md:text-lg">
+                This public walkthrough is intentionally framed like a product review, not an operator console. It shows how EdgePredict
+                ingests sports market data, estimates fair value from sportsbook consensus, and blocks unsafe execution with hard rules.
               </p>
-              <div className="flex flex-wrap gap-3 pt-2">
-                <Pill icon={<Eye size={14} />} label="Viewer mode only" />
+              <div className="flex flex-wrap gap-3 pt-1">
+                <Pill icon={<Eye size={14} />} label="Viewer mode" />
                 <Pill icon={<Shield size={14} />} label="No live controls" />
-                <Pill icon={<Lock size={14} />} label="Execution blocked" />
+                <Pill icon={<Lock size={14} />} label="Hard execution blocks" />
               </div>
             </div>
-            <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-1">
+            <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-2">
               <HeroMetric label="Candidates scored" value="24" detail="Across MLB, NBA, NHL" />
               <HeroMetric label="Passed every rule" value="3" detail="Ready for human review" />
-              <HeroMetric label="Top blocker" value="Low EV" detail="Most common rejection reason" />
+              <HeroMetric label="Most common blocker" value="Low EV" detail="Math beats instinct" />
+              <div className="stat-block flex min-h-[150px] flex-col justify-between">
+                <p className="section-kicker">Why this matters</p>
+                <p className="max-w-sm text-lg leading-7 text-white/76">
+                  The point is not to force trades. The point is to reject weak ones with clear reasons.
+                </p>
+              </div>
             </div>
           </div>
         </header>
 
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          {walkthroughSteps.map((step) => (
-            <div key={step.title} className="bento-card p-5">
-              <p className="mono text-[10px] uppercase tracking-[0.18em] text-white/35">{step.title}</p>
-              <p className="mt-3 text-sm leading-6 text-white/72">{step.text}</p>
+        <section className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+          <div className="bento-card p-5 md:p-6">
+            <p className="section-kicker">Walkthrough</p>
+            <div className="mt-5 space-y-5">
+              {walkthroughSteps.map((step, index) => (
+                <div key={step.title} className="grid grid-cols-[auto_1fr] gap-4">
+                  <div className="flex flex-col items-center">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full border border-edge-gold/30 bg-edge-gold/10 mono text-[11px] text-edge-gold">
+                      0{index + 1}
+                    </div>
+                    {index < walkthroughSteps.length - 1 && <div className="mt-2 h-full w-px bg-white/10" />}
+                  </div>
+                  <div className="pb-4">
+                    <p className="text-sm font-semibold uppercase tracking-[0.08em] text-white">{step.title.replace(/^\d+\.\s*/, "")}</p>
+                    <p className="mt-2 text-sm leading-6 text-white/66">{step.text}</p>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
+          <div className="bento-card p-5 md:p-6">
+            <p className="section-kicker">What a recruiter should notice</p>
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              <Highlight title="Signal over hype" text="The system is built to explain why a market is interesting, not just to output a pick." />
+              <Highlight title="Controls before execution" text="Risk rules are first-class product behavior, not a note at the bottom of the screen." />
+              <Highlight title="Reviewable decisions" text="Pass, blocked, and score-only outcomes are all visible so the operator can inspect the reasoning." />
+              <Highlight title="Demo-safe packaging" text="This public site tells the story cleanly without exposing live controls, credentials, or internal state." />
+            </div>
+          </div>
         </section>
 
         <section className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
@@ -224,7 +253,7 @@ export default function App() {
                   <Radar size={14} />
                   Mock Opportunity Feed
                 </h2>
-                <p className="mt-1 text-sm text-white/42">Sample markets that demonstrate pass, blocked, and score-only outcomes.</p>
+                <p className="mt-1 text-sm text-white/42">Representative examples that show how the system behaves when the signal is strong, weak, or not execution-safe yet.</p>
               </div>
               <span className="mono text-[10px] uppercase text-white/35">Static demo data</span>
             </div>
@@ -281,9 +310,9 @@ export default function App() {
                     <Target size={14} />
                     Selected Decision
                   </h2>
-                  <p className="mt-3 text-lg font-semibold text-white">{selected.title}</p>
-                  <p className="mono mt-1 text-[11px] uppercase tracking-[0.16em] text-white/35">{selected.league} · {selected.ticker}</p>
-                </div>
+                <p className="mt-3 text-lg font-semibold text-white">{selected.title}</p>
+                <p className="mono mt-1 text-[11px] uppercase tracking-[0.16em] text-white/35">{selected.league} · {selected.ticker}</p>
+              </div>
                 <span className={`rounded-full border px-3 py-1 mono text-[10px] ${statusClass(selected.status)}`}>
                   {selected.status === "SCORE_ONLY" ? "SCORE ONLY" : selected.status}
                 </span>
@@ -300,7 +329,7 @@ export default function App() {
 
               <div className="mt-5 space-y-4 text-sm leading-6">
                 <div>
-                  <p className="mono text-[10px] uppercase tracking-[0.16em] text-white/35">Why it surfaced</p>
+                  <p className="section-kicker">Why it surfaced</p>
                   <div className="mt-2 space-y-2 text-white/72">
                     {selected.whyItPassed.length > 0 ? selected.whyItPassed.map((item) => (
                       <p key={item}>{item}</p>
@@ -308,7 +337,7 @@ export default function App() {
                   </div>
                 </div>
                 <div>
-                  <p className="mono text-[10px] uppercase tracking-[0.16em] text-white/35">Why execution stops or stays read-only</p>
+                  <p className="section-kicker">Why execution stops or stays read-only</p>
                   <div className="mt-2 space-y-2 text-white/72">
                     {selected.whyItStopped.length > 0 ? selected.whyItStopped.map((item) => (
                       <p key={item}>{item}</p>
@@ -430,8 +459,8 @@ function Pill({ icon, label }: { icon: ReactNode; label: string }) {
 
 function HeroMetric({ label, value, detail }: { label: string; value: string; detail: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
-      <p className="mono text-[10px] uppercase tracking-[0.16em] text-white/35">{label}</p>
+    <div className="stat-block min-h-[150px]">
+      <p className="section-kicker">{label}</p>
       <p className="mt-2 text-3xl font-semibold text-white">{value}</p>
       <p className="mt-1 text-sm text-white/48">{detail}</p>
     </div>
@@ -455,6 +484,15 @@ function SystemCard({ icon, title, text }: { icon: ReactNode; title: string; tex
       </div>
       <h3 className="mt-4 text-lg font-semibold text-white">{title}</h3>
       <p className="mt-2 text-sm leading-6 text-white/62">{text}</p>
+    </div>
+  );
+}
+
+function Highlight({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="rounded-[1.15rem] border border-white/8 bg-black/18 p-4">
+      <p className="text-sm font-semibold uppercase tracking-[0.08em] text-white">{title}</p>
+      <p className="mt-2 text-sm leading-6 text-white/64">{text}</p>
     </div>
   );
 }
