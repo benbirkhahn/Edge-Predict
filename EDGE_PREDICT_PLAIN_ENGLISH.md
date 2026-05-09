@@ -2,7 +2,7 @@
 
 ## What This Is
 
-EdgePredict is a small automated trading system for Kalshi sports prediction markets.
+EdgePredict is a small automated market intelligence and trading system for Kalshi sports prediction markets.
 
 Kalshi lets people buy contracts on real-world outcomes. In this case, the system focuses on sports markets like MLB, NBA, and NHL game winners.
 
@@ -160,7 +160,7 @@ Over time, the goal is to learn which leagues, market types, and signals are act
 
 ## Simple Summary
 
-EdgePredict is an automated, rule-based Kalshi sports trading system.
+EdgePredict is an automated, rule-based Kalshi sports market intelligence system.
 
 It looks for price differences between Kalshi and sportsbook consensus.
 
@@ -169,4 +169,3 @@ It only places small trades when strict safety rules pass.
 It runs 24/7 on a cloud server and is accessed through a private dashboard.
 
 The goal right now is to test whether the system can find real positive-EV opportunities safely and consistently.
-

@@ -1,8 +1,8 @@
 # EdgePredict Sports Intelligence
 
-EdgePredict is a portfolio-safe version of a sports market intelligence and execution-control project. It analyzes Kalshi sports markets, compares market pricing to sportsbook-implied probabilities, and only allows execution when strict server-side risk rules pass.
+EdgePredict is a sports market intelligence and execution-control system built around positive-EV decisioning, sportsbook consensus signals, and strict server-side risk rules.
 
-This repo is intentionally sanitized for GitHub:
+This public repo is intentionally sanitized for GitHub:
 
 - Real credentials stay in `.env.local`, which is ignored.
 - Local trading history and runtime state stay in `data/`, which is ignored.
@@ -16,7 +16,7 @@ This repo is intentionally sanitized for GitHub:
 - Applies hard risk controls before any live action is allowed.
 - Shows approvals, rejections, bankroll, and execution state in a local dashboard.
 
-This is not a discretionary betting app. It is a rules-based positive-EV engine with multiple server-side blocks against unsafe execution.
+This is not a discretionary picks app. It is a rules-based positive-EV engine with hard controls around execution.
 
 ## Risk Controls
 
@@ -60,3 +60,4 @@ This project demonstrates:
 - finance and risk-control thinking
 - server-side safeguards for execution systems
 - explainable decisioning instead of black-box actions
+- product packaging for a public technical portfolio
