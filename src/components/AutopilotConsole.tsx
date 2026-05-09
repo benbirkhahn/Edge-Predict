@@ -5,11 +5,18 @@ import { AutopilotState, VirtualPosition } from "../types";
 import { checkBrokerStatus } from "../services/brokerService";
 import { fetchBrokerBalance } from "../services/oddsService";
 
-export function AutopilotConsole() {
+interface AutopilotConsoleProps {
+  isActive: boolean;
+  onToggle: () => void;
+  allocation: number;
+  onAllocationChange: (val: number) => void;
+}
+
+export function AutopilotConsole({ isActive, onToggle, allocation, onAllocationChange }: AutopilotConsoleProps) {
   const [state, setState] = useState<AutopilotState>({
-    isActive: false,
+    isActive: isActive,
     isBrokerConnected: false,
-    capital: 0,
+    capital: allocation,
     totalPositions: 12,
     winRate: 58.3,
     log: [
@@ -21,7 +28,19 @@ export function AutopilotConsole() {
 
   const [isSimulated, setIsSimulated] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [allocation, setAllocation] = useState(100);
+
+  // Sync state.isActive and state.capital with props
+  useEffect(() => {
+    setState(prev => ({ ...prev, isActive, capital: allocation }));
+    
+    // Add log entry on toggle
+    const timestamp = new Date().toLocaleTimeString();
+    const action = isActive ? "AUTO_DEPLOY: Agent active and scanning nodes." : "SBY: Agent suspended.";
+    setState(prev => ({
+      ...prev,
+      log: [`${timestamp} - ${action}`, ...prev.log].slice(0, 5)
+    }));
+  }, [isActive, allocation]);
 
   useEffect(() => {
     const initBroker = async () => {
@@ -29,42 +48,33 @@ export function AutopilotConsole() {
       const balanceData = await fetchBrokerBalance();
       setIsSimulated(!!balanceData.simulated);
       
+      const timestamp = new Date().toLocaleTimeString();
       if (status.connected) {
         setState(prev => ({
           ...prev,
           isBrokerConnected: true,
-          capital: allocation,
-          log: [`${new Date().toLocaleTimeString()} - KALSHI_LINK: API verified. Ready for live execution.`, ...prev.log].slice(0, 5)
+          log: [`${timestamp} - KALSHI_LINK: API verified. Balance: $${balanceData.balance}`, ...prev.log].slice(0, 5)
         }));
       } else {
         setState(prev => ({
           ...prev,
           isBrokerConnected: false,
-          capital: allocation,
-          log: [`${new Date().toLocaleTimeString()} - KALSHI_SYNC: No credentials found. Simulation active.`, ...prev.log].slice(0, 5)
+          log: [`${timestamp} - KALSHI_SYNC: No credentials found. Simulation active.`, ...prev.log].slice(0, 5)
         }));
       }
     };
 
     initBroker();
-  }, [allocation]);
+  }, [state.isBrokerConnected]);
 
   const toggleAutopilot = () => {
-    if (!state.isBrokerConnected && !state.isActive) {
+    if (!state.isBrokerConnected && !isActive) {
       setState(prev => ({
         ...prev,
         log: [`${new Date().toLocaleTimeString()} - WARNING: Live betting disabled. Running in SIMULATION MODE.`, ...prev.log].slice(0, 5)
       }));
     }
-
-    setState(prev => ({
-      ...prev,
-      isActive: !prev.isActive,
-      log: [
-        `${new Date().toLocaleTimeString()} - ${!prev.isActive ? "AUTO_DEPLOY: Agent active and scanning nodes." : "SBY: Agent suspended."}`,
-        ...prev.log
-      ].slice(0, 5)
-    }));
+    onToggle();
   };
 
   return (
@@ -123,7 +133,7 @@ export function AutopilotConsole() {
                 <input 
                   type="number"
                   value={allocation}
-                  onChange={(e) => setAllocation(Number(e.target.value))}
+                  onChange={(e) => onAllocationChange(Number(e.target.value))}
                   className="w-full bg-black/40 border border-white/10 rounded px-2 py-1 text-sm mono focus:border-edge-green outline-none"
                 />
               </div>
