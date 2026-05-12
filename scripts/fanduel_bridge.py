@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 def load_client():
-    package_root = os.environ.get("FANDUEL_CLIENT_PATH", "/Users/benbirkhahn/fanduel_odds_client")
+    package_root = os.environ.get("FANDUEL_CLIENT_PATH", str(Path.home() / "fanduel_odds_client"))
     if str(package_root) not in sys.path:
         sys.path.insert(0, str(package_root))
     from fanduel_odds import FanDuelClient  # type: ignore

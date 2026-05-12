@@ -5,6 +5,7 @@ import { promisify } from "node:util";
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import crypto from "crypto";
+import dns from "node:dns/promises";
 import fs from "fs";
 import path from "path";
 
@@ -21,6 +22,7 @@ const BET_HISTORY_PATH = path.join(process.cwd(), "data", "bet-history.json");
 const AUTOPILOT_STATE_PATH = path.join(process.cwd(), "data", "autopilot-state.json");
 const MARKET_SNAPSHOT_REFRESH_MS = 10 * 60 * 1000;
 const FANDUEL_BRIDGE_PATH = path.join(process.cwd(), "scripts", "fanduel_bridge.py");
+const PROVIDER_TIMEOUT_MS = Number(process.env.ODDS_PROVIDER_TIMEOUT_MS || 3500);
 const HARD_RULES = {
   maxStakeDollars: 1,
   dailyLossLimitDollars: 10,
@@ -38,6 +40,18 @@ function errorMessage(error: unknown) {
     return JSON.stringify(error);
   } catch {
     return "Unknown error";
+  }
+}
+
+async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  let timer: NodeJS.Timeout | null = null;
+  const timeout = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+  });
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    if (timer) clearTimeout(timer);
   }
 }
 
@@ -516,7 +530,10 @@ async function fetchSharpLeagueOdds(league: string) {
     url.searchParams.set("limit", "200");
     if (cursor) url.searchParams.set("cursor", cursor);
 
-    const response = await fetch(url, { headers: { "X-API-Key": process.env.SHARP_API_KEY || "" } });
+    const response = await fetch(url, {
+      headers: { "X-API-Key": process.env.SHARP_API_KEY || "" },
+      signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS)
+    });
     const data = await response.json();
     if (!response.ok) throw new Error(data?.error?.message || `SharpAPI ${league} odds failed with ${response.status}`);
 
@@ -538,32 +555,41 @@ async function runFanduelBridge<T>(args: string[]): Promise<T> {
 }
 
 async function fetchFanduelSportsbookOdds() {
-  return runFanduelBridge<SportsbookOdd[]>(["sportsbook", ...fanduelLeagues()]);
+  return withTimeout(runFanduelBridge<SportsbookOdd[]>(["sportsbook", ...fanduelLeagues()]), PROVIDER_TIMEOUT_MS, "fanduel odds");
 }
 
 async function fetchFanduelGameOdds(sport: string) {
-  return runFanduelBridge<any[]>(["games", sport]);
+  return withTimeout(runFanduelBridge<any[]>(["games", sport]), PROVIDER_TIMEOUT_MS, "fanduel games");
 }
 
 async function getSportsbookOdds() {
   const provider = process.env.ODDS_PROVIDER || "consensus";
   if (oddsCache && Date.now() - oddsCache.fetchedAt < oddsRefreshMs()) return oddsCache.odds;
 
-  try {
-    const sharpOdds = (provider === "sharpapi" || provider === "consensus") && hasSharpCredentials()
-      ? await Promise.all(sharpLeagues().map(fetchSharpLeagueOdds)).then((results) => results.flat())
-      : [];
-    const fanduelOdds = provider === "fanduel" || provider === "consensus"
-      ? await fetchFanduelSportsbookOdds()
-      : [];
-    const odds = [...sharpOdds, ...fanduelOdds];
-    oddsCache = { fetchedAt: Date.now(), odds };
-    return odds;
-  } catch (error) {
-    if (oddsCache) return oddsCache.odds;
-    oddsCache = { fetchedAt: Date.now(), odds: [], error: errorMessage(error) };
-    return [];
+  const errors: string[] = [];
+  let sharpOdds: SportsbookOdd[] = [];
+  let fanduelOdds: SportsbookOdd[] = [];
+
+  if ((provider === "sharpapi" || provider === "consensus") && hasSharpCredentials()) {
+    try {
+      sharpOdds = await Promise.all(sharpLeagues().map(fetchSharpLeagueOdds)).then((results) => results.flat());
+    } catch (error) {
+      errors.push(`sharpapi: ${errorMessage(error)}`);
+    }
   }
+
+  if (provider === "fanduel" || provider === "consensus") {
+    try {
+      fanduelOdds = await fetchFanduelSportsbookOdds();
+    } catch (error) {
+      errors.push(`fanduel: ${errorMessage(error)}`);
+    }
+  }
+
+  const odds = [...sharpOdds, ...fanduelOdds];
+  if (!odds.length && oddsCache) return oddsCache.odds;
+  oddsCache = { fetchedAt: Date.now(), odds, error: errors.join("; ") };
+  return odds;
 }
 
 function buildConsensusOutcomes(odds: SportsbookOdd[]) {
@@ -662,6 +688,66 @@ function buildOddsCoverage(odds: SportsbookOdd[]): OddsCoverage {
     oneBookEvents: byEvent.size - twoBookEvents,
     byLeague,
     topEvents: topEvents.sort((a, b) => b.books.length - a.books.length).slice(0, 12)
+  };
+}
+
+async function checkHost(host: string) {
+  try {
+    await withTimeout(dns.lookup(host), 1500, `${host} dns`);
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: errorMessage(error) };
+  }
+}
+
+async function checkUrl(name: string, url: string) {
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS)
+    });
+    return { name, ok: response.ok, status: response.status, error: response.ok ? undefined : response.statusText };
+  } catch (error) {
+    return { name, ok: false, error: errorMessage(error) };
+  }
+}
+
+async function buildHealthStatus() {
+  const dnsChecks = {
+    google: await checkHost("google.com"),
+    kalshi: await checkHost(new URL(kalshiBaseUrl()).hostname),
+    sharpapi: await checkHost(new URL(SHARP_API_URL).hostname)
+  };
+  const kalshi = await checkUrl("kalshi", `${kalshiBaseUrl()}${TRADE_API_PREFIX}/exchange/status`);
+  const oddsCoverage = buildOddsCoverage(await getSportsbookOdds());
+  const oddsOk = oddsCoverage.rawOdds > 0;
+  const staleScan = autopilotStatus.enabled && autopilotStatus.lastScan
+    ? Date.now() - new Date(autopilotStatus.lastScan).getTime() > autopilotStatus.intervalSeconds * 3 * 1000
+    : false;
+  const ok = dnsChecks.google.ok && dnsChecks.kalshi.ok && kalshi.ok && oddsOk && !staleScan;
+
+  return {
+    ok,
+    checkedAt: new Date().toISOString(),
+    mode: currentMode(kalshi.ok, mergeRisk()),
+    dns: dnsChecks,
+    providers: {
+      kalshi,
+      odds: {
+        ok: oddsOk,
+        rawOdds: oddsCoverage.rawOdds,
+        events: oddsCoverage.events,
+        twoBookEvents: oddsCoverage.twoBookEvents,
+        lastError: oddsCache?.error || null
+      }
+    },
+    autopilot: autopilotStatus,
+    notes: [
+      !dnsChecks.google.ok ? "VM DNS is unhealthy." : "",
+      !kalshi.ok ? "Kalshi is unreachable." : "",
+      !oddsOk ? "No sportsbook odds are currently available." : "",
+      staleScan ? "Autopilot scan is stale." : ""
+    ].filter(Boolean)
   };
 }
 
@@ -1088,10 +1174,15 @@ function analyzeMarket(market: MarketView, riskInput?: Partial<RiskSettings>, ba
   };
 }
 
-async function analyzeMarketWithPortfolio(market: MarketView, riskInput?: Partial<RiskSettings>, balanceDollars = 0) {
+async function analyzeMarketWithPortfolio(
+  market: MarketView,
+  riskInput?: Partial<RiskSettings>,
+  balanceDollars = 0,
+  consensusOutcomes?: ConsensusOutcome[]
+) {
   const risk = mergeRisk(riskInput);
-  const odds = await getSportsbookOdds();
-  const consensusMatch = mapMarketToConsensus(market, buildConsensusOutcomes(odds));
+  const outcomes = consensusOutcomes || buildConsensusOutcomes(await getSportsbookOdds());
+  const consensusMatch = mapMarketToConsensus(market, outcomes);
   const decision = analyzeMarket(market, risk, balanceDollars, consensusMatch);
 
   if (!hasKalshiCredentials()) return decision;
@@ -1231,7 +1322,11 @@ async function runAutopilotScan() {
   try {
     const balance = await getBalance().catch(() => ({ balance: 0 }));
     const markets = await getMarkets(24);
-    const decisions = await Promise.all(markets.map((market) => analyzeMarketWithPortfolio(market, defaultRisk, balance.balance)));
+    const consensusOutcomes = buildConsensusOutcomes(await getSportsbookOdds());
+    const decisions: StrategyDecision[] = [];
+    for (const market of markets) {
+      decisions.push(await analyzeMarketWithPortfolio(market, defaultRisk, balance.balance, consensusOutcomes));
+    }
     const ranked = decisions.sort((a, b) => b.evPercent - a.evPercent);
     const approved = ranked.filter((decision) => decision.approved);
     const blockers = ranked.flatMap((decision) => decision.rejections).reduce<Record<string, number>>((counts, reason) => {
@@ -1357,6 +1452,19 @@ async function startServer() {
     } catch (error) {
       res.status(502).json({ error: errorMessage(error) });
     }
+  });
+
+  app.get("/api/health", async (_req, res) => {
+    try {
+      const health = await buildHealthStatus();
+      res.status(health.ok ? 200 : 503).json(health);
+    } catch (error) {
+      res.status(503).json({ ok: false, checkedAt: new Date().toISOString(), error: errorMessage(error) });
+    }
+  });
+
+  app.get("/api/health/live", (_req, res) => {
+    res.json({ ok: true, checkedAt: new Date().toISOString(), pid: process.pid });
   });
 
   app.get("/api/autopilot/status", (_req, res) => {
