@@ -606,7 +606,7 @@ function buildConsensusOutcomes(odds: SportsbookOdd[]) {
     const total = dedupedBookOdds.reduce((sum, odd) => sum + odd.impliedProbability, 0);
     if (total <= 0) continue;
     for (const odd of dedupedBookOdds) {
-      const key = `${canonicalEventKey(odd)}:${canonicalOutcomeKey(odd)}`;
+      const key = `${canonicalEventKey(odd)}:${odd.selectionType || canonicalOutcomeKey(odd)}`;
       fairByOutcome.set(key, [...(fairByOutcome.get(key) || []), { probability: odd.impliedProbability / total, book: odd.book, odd }]);
     }
   }
@@ -634,7 +634,7 @@ function buildConsensusOutcomes(odds: SportsbookOdd[]) {
 function dedupeBookSides(bookOdds: SportsbookOdd[]) {
   const bySide = new Map<string, SportsbookOdd[]>();
   for (const odd of bookOdds) {
-    const side = canonicalOutcomeKey(odd);
+    const side = odd.selectionType || canonicalOutcomeKey(odd);
     bySide.set(side, [...(bySide.get(side) || []), odd]);
   }
 
@@ -763,6 +763,7 @@ function canonicalEventKeyFromParts(league: string, homeTeamId: string, awayTeam
 }
 
 function canonicalOutcomeKey(odd: SportsbookOdd) {
+  if (odd.selectionType === "home" || odd.selectionType === "away") return odd.selectionType;
   const home = odd.homeTeamId || canonicalTeamId(odd.homeTeam);
   const away = odd.awayTeamId || canonicalTeamId(odd.awayTeam);
   const outcome = canonicalTeamId(odd.outcome);
